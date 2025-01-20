@@ -9,6 +9,20 @@ services:
       - xpack.security.enabled=false
     ports:
       - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - logging-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.8
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
     networks:
       - logging-net
 
@@ -33,3 +47,7 @@ services:
 networks:
   logging-net:
     driver: bridge
+
+volumes:
+  esdata:
+    driver: local

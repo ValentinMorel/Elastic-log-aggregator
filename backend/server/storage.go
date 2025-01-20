@@ -20,7 +20,7 @@ func NewStorage() *Storage {
 		log.Fatalf("Failed to connect to Elasticsearch: %v", err)
 	}
 
-	// Ensure the logs index exists
+	// Ensure the index exists
 	index := "logs"
 	exists, err := client.IndexExists(index).Do(context.Background())
 	if err != nil {
