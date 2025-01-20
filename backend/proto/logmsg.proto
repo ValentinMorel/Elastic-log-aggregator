@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package log;
+option go_package = "../pb/logmsg";
+
+service LogService {
+    rpc SendLogs (stream LogMessage) returns (LogResponse);
+    rpc QueryLogs (LogQuery) returns (stream LogMessage);
+    rpc Metrics (Empty) returns (MetricsResponse);
+}
+
+message LogMessage {
+    string source = 1;          // Log source application
+    string log_level = 2;       // Log level (INFO, WARN, ERROR)
+    string message = 3;         // Log content
+    int64 timestamp = 4;        // Log timestamp
+    map<string, string> fields = 5; // Additional structured fields
+}
+
+message LogResponse {
+    string status = 1;
+}
+
+message LogQuery {
+    string source = 1;
+    string log_level = 2;
+    int64 start_time = 3;
+    int64 end_time = 4;
+}
+
+message MetricsResponse {
+    int32 active_sources = 1;
+    int32 alerts_triggered = 2;
+}
+
+message Empty {}
