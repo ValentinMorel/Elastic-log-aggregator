@@ -64,7 +64,7 @@ func (s *Storage) SaveLog(logMsg *proto.LogMessage) {
 
 func (s *Storage) QueryLogs(query *proto.LogQuery) []*proto.LogMessage {
 	search := elastic.NewBoolQuery().
-		Must(elastic.NewTermQuery("app_name", query.Source)).
+		Must(elastic.NewTermQuery("source", query.Source)).
 		Must(elastic.NewRangeQuery("timestamp").Gte(query.StartTime).Lte(query.EndTime))
 
 	result, err := s.client.Search().

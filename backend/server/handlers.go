@@ -35,7 +35,7 @@ func (s *LogService) SendLogs(stream proto.LogService_SendLogsServer) error {
 		// Save the log to storage
 		s.storage.SaveLog(logMsg)
 
-		// Broadcast the log to WebSocket clients
+		// Broadcast to WebSocket clients
 		broadcast <- logMsg
 
 		log.Printf("Received log from %s: %s", logMsg.Source, logMsg.Message)

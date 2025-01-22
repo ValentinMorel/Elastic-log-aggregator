@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/olivere/elastic/v7"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 var upgrader = websocket.Upgrader{
@@ -20,6 +21,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
+	quit := make(chan bool, 1)
 	log.Println("Starting Distributed Logging System...")
 
 	// Initialize Elasticsearch client
@@ -41,6 +43,8 @@ func main() {
 		}
 
 		grpcServer := grpc.NewServer()
+		reflection.Register(grpcServer)
+
 		server := server.NewLogService()
 		proto.RegisterLogServiceServer(grpcServer, server)
 
@@ -67,8 +71,9 @@ func main() {
 		}
 	})
 
-	log.Println("WebSocket server for alerts running on port 8081")
-	if err := http.ListenAndServe(":8081", nil); err != nil {
-		log.Fatalf("Failed to serve WebSocket server: %v", err)
+	log.Println("WebSocket server running on port 8080")
+	if err := http.ListenAndServe(":8080", http.HandlerFunc(server.HandleWebsocketConnections)); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
 	}
+	<-quit
 }
