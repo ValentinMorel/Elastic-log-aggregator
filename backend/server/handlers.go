@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"log"
+	"time"
 
 	proto "log-aggregator/pb/logmsg"
 )
@@ -29,16 +30,24 @@ func (s *LogService) SendLogs(stream proto.LogService_SendLogsServer) error {
 			return stream.SendAndClose(&proto.LogResponse{Status: "Logs received successfully"})
 		}
 
+		logEntry := &proto.LogMessage{
+			Timestamp: time.Now().UTC().Format(time.RFC3339), // Add timestamp
+			Source:    logMsg.Source,
+			LogLevel:  logMsg.LogLevel,
+			Message:   logMsg.Message,
+		}
+
 		// Increment active sources
 		s.metrics.IncrementSource(logMsg.Source)
 
 		// Save the log to storage
-		s.storage.SaveLog(logMsg)
+		s.storage.SaveLog(logEntry)
 
 		// Broadcast to WebSocket clients
 		broadcast <- logMsg
 
 		log.Printf("Received log from %s: %s", logMsg.Source, logMsg.Message)
+		return nil
 	}
 }
 

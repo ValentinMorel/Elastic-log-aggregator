@@ -36,7 +36,8 @@ func main() {
 	}
 	response, err := stream.CloseAndRecv()
 	if err != nil {
-		log.Fatalf("Failed to receive response: %v", err)
+		log.Printf("Empty response: %v", err)
+		return
 	}
 
 	log.Printf("Response: %s", response.Status)
