@@ -1,25 +1,22 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import LogQuery from "./components/LogQuery";
+import Metrics from "./components/Metrics";
+import LiveLogs from "./components/LiveLogs";
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+    <div className="dashboard-container">
+      <header>
+        <h1>Distributed Logging Dashboard</h1>
+        <p>View and analyze logs in real-time</p>
       </header>
+      <main>
+        <div className="grid grid-2-cols">
+          <LogQuery />
+          <Metrics />
+        </div>
+        <LiveLogs />
+      </main>
     </div>
   );
 }
-
-export default App;
