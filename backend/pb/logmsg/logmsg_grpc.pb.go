@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LogService_SendLogs_FullMethodName  = "/log.LogService/SendLogs"
-	LogService_QueryLogs_FullMethodName = "/log.LogService/QueryLogs"
-	LogService_Metrics_FullMethodName   = "/log.LogService/Metrics"
+	LogService_SendLogs_FullMethodName   = "/log.LogService/SendLogs"
+	LogService_QueryLogs_FullMethodName  = "/log.LogService/QueryLogs"
+	LogService_GetMetrics_FullMethodName = "/log.LogService/GetMetrics"
 )
 
 // LogServiceClient is the client API for LogService service.
@@ -30,7 +30,7 @@ const (
 type LogServiceClient interface {
 	SendLogs(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[LogMessage, LogResponse], error)
 	QueryLogs(ctx context.Context, in *LogQuery, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogMessage], error)
-	Metrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error)
+	GetMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error)
 }
 
 type logServiceClient struct {
@@ -73,10 +73,10 @@ func (c *logServiceClient) QueryLogs(ctx context.Context, in *LogQuery, opts ...
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type LogService_QueryLogsClient = grpc.ServerStreamingClient[LogMessage]
 
-func (c *logServiceClient) Metrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error) {
+func (c *logServiceClient) GetMetrics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MetricsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MetricsResponse)
-	err := c.cc.Invoke(ctx, LogService_Metrics_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, LogService_GetMetrics_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (c *logServiceClient) Metrics(ctx context.Context, in *Empty, opts ...grpc.
 type LogServiceServer interface {
 	SendLogs(grpc.ClientStreamingServer[LogMessage, LogResponse]) error
 	QueryLogs(*LogQuery, grpc.ServerStreamingServer[LogMessage]) error
-	Metrics(context.Context, *Empty) (*MetricsResponse, error)
+	GetMetrics(context.Context, *Empty) (*MetricsResponse, error)
 	mustEmbedUnimplementedLogServiceServer()
 }
 
@@ -106,8 +106,8 @@ func (UnimplementedLogServiceServer) SendLogs(grpc.ClientStreamingServer[LogMess
 func (UnimplementedLogServiceServer) QueryLogs(*LogQuery, grpc.ServerStreamingServer[LogMessage]) error {
 	return status.Errorf(codes.Unimplemented, "method QueryLogs not implemented")
 }
-func (UnimplementedLogServiceServer) Metrics(context.Context, *Empty) (*MetricsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Metrics not implemented")
+func (UnimplementedLogServiceServer) GetMetrics(context.Context, *Empty) (*MetricsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMetrics not implemented")
 }
 func (UnimplementedLogServiceServer) mustEmbedUnimplementedLogServiceServer() {}
 func (UnimplementedLogServiceServer) testEmbeddedByValue()                    {}
@@ -148,20 +148,20 @@ func _LogService_QueryLogs_Handler(srv interface{}, stream grpc.ServerStream) er
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type LogService_QueryLogsServer = grpc.ServerStreamingServer[LogMessage]
 
-func _LogService_Metrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _LogService_GetMetrics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LogServiceServer).Metrics(ctx, in)
+		return srv.(LogServiceServer).GetMetrics(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LogService_Metrics_FullMethodName,
+		FullMethod: LogService_GetMetrics_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LogServiceServer).Metrics(ctx, req.(*Empty))
+		return srv.(LogServiceServer).GetMetrics(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -174,8 +174,8 @@ var LogService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LogServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Metrics",
-			Handler:    _LogService_Metrics_Handler,
+			MethodName: "GetMetrics",
+			Handler:    _LogService_GetMetrics_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

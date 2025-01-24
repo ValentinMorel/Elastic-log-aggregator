@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/olivere/elastic/v7"
@@ -10,7 +11,7 @@ import (
 
 func (s *LogService) sendAlert(message string) {
 	log.Printf("ALERT: %s", message)
-	// Integrate email or Slack notifications here
+	// Integrate email or anything else notifications here
 }
 
 type AlertRule struct {
@@ -21,16 +22,17 @@ type AlertRule struct {
 }
 
 type Alerts struct {
-	client    *elastic.Client
-	rules     []AlertRule
-	broadcast chan string
+	client         *elastic.Client
+	rules          []AlertRule
+	broadcast      chan string
+	triggeredCount atomic.Int32
 }
 
 func NewAlerts(client *elastic.Client) *Alerts {
 	return &Alerts{
 		client:    client,
 		rules:     []AlertRule{},
-		broadcast: make(chan string, 100), // Channel to send alert notifications
+		broadcast: make(chan string), // Channel to send alert notifications
 	}
 }
 
@@ -45,23 +47,20 @@ func (a *Alerts) AddRule(keyword string, threshold int, timeWindow time.Duration
 	log.Printf("Added alert rule: %s", description)
 }
 
-// StartMonitoring starts monitoring logs based on alert rules
 func (a *Alerts) StartMonitoring() {
 	go func() {
 		for {
 			for _, rule := range a.rules {
 				a.checkRule(rule)
 			}
-			time.Sleep(1 * time.Minute) // Check every minute
+			time.Sleep(1 * time.Minute)
 		}
 	}()
 }
 
-// checkRule checks if an alert rule is triggered
 func (a *Alerts) checkRule(rule AlertRule) {
 	cutoff := time.Now().Add(-rule.TimeWindow).Unix() * 1000 // Convert to milliseconds
 
-	// Search logs for the specified keyword within the time window
 	query := elastic.NewBoolQuery().
 		Must(elastic.NewMatchQuery("message", rule.Keyword)).
 		Filter(elastic.NewRangeQuery("timestamp").Gte(cutoff))
@@ -76,13 +75,21 @@ func (a *Alerts) checkRule(rule AlertRule) {
 	}
 
 	if int(result.TotalHits()) >= rule.Threshold {
+		// Lock before incrementing
+		a.triggeredCount.Add(1)
+
 		alertMessage := rule.Description
 		log.Printf("ALERT TRIGGERED: %s", alertMessage)
+
+		// Broadcast the alert to WebSocket clients
 		a.broadcast <- alertMessage
 	}
 }
 
-// GetBroadcastChannel returns the alert notification channel
 func (a *Alerts) GetBroadcastChannel() chan string {
 	return a.broadcast
+}
+
+func (a *Alerts) GetAlertsTriggered() int {
+	return int(a.triggeredCount.Load())
 }

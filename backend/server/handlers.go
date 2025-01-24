@@ -8,18 +8,18 @@ import (
 	proto "log-aggregator/pb/logmsg"
 )
 
-var broadcast = make(chan *proto.LogMessage, 100) // Buffered channel to broadcast logs
+var Broadcast = make(chan *proto.LogMessage) // Buffered channel to broadcast logs
 
 type LogService struct {
 	proto.UnimplementedLogServiceServer
-	storage *Storage
-	metrics *Metrics
+	Storage *Storage
+	Metrics *MetricsData
 }
 
 func NewLogService() *LogService {
 	return &LogService{
-		storage: NewStorage(),
-		metrics: NewMetrics(),
+		Storage: NewStorage(),
+		Metrics: NewMetrics(),
 	}
 }
 
@@ -38,13 +38,16 @@ func (s *LogService) SendLogs(stream proto.LogService_SendLogsServer) error {
 		}
 
 		// Increment active sources
-		s.metrics.IncrementSource(logMsg.Source)
+		s.Metrics.IncrementSource(logMsg.Source)
+
+		log.Println("Active sources:", s.Metrics.GetActiveSources())
 
 		// Save the log to storage
-		s.storage.SaveLog(logEntry)
+		s.Storage.SaveLog(logEntry)
 
 		// Broadcast to WebSocket clients
-		broadcast <- logMsg
+		log.Println("Broadcasting log message")
+		Broadcast <- logMsg
 
 		log.Printf("Received log from %s: %s", logMsg.Source, logMsg.Message)
 		return nil
@@ -52,7 +55,7 @@ func (s *LogService) SendLogs(stream proto.LogService_SendLogsServer) error {
 }
 
 func (s *LogService) QueryLogs(query *proto.LogQuery, stream proto.LogService_QueryLogsServer) error {
-	logs := s.storage.QueryLogs(query)
+	logs := s.Storage.QueryLogs(query)
 	for _, logMsg := range logs {
 		if err := stream.Send(logMsg); err != nil {
 			return err
@@ -61,9 +64,9 @@ func (s *LogService) QueryLogs(query *proto.LogQuery, stream proto.LogService_Qu
 	return nil
 }
 
-func (s *LogService) Metrics(ctx context.Context, empty *proto.Empty) (*proto.MetricsResponse, error) {
+func (s *LogService) GetMetrics(ctx context.Context, empty *proto.Empty) (*proto.MetricsResponse, error) {
 	return &proto.MetricsResponse{
-		ActiveSources:   int32(s.metrics.GetActiveSources()),
-		AlertsTriggered: int32(s.metrics.GetAlertsTriggered()),
+		ActiveSources:   int32(s.Metrics.GetActiveSources()),
+		AlertsTriggered: int32(s.Metrics.GetAlertsTriggered()),
 	}, nil
 }

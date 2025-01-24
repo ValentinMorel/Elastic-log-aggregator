@@ -6,7 +6,7 @@ option go_package = "../pb/logmsg";
 service LogService {
     rpc SendLogs (stream LogMessage) returns (LogResponse);
     rpc QueryLogs (LogQuery) returns (stream LogMessage);
-    rpc Metrics (Empty) returns (MetricsResponse);
+    rpc GetMetrics (Empty) returns (MetricsResponse);
 }
 
 message LogMessage {

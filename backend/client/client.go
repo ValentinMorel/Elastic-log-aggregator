@@ -18,7 +18,7 @@ func main() {
 
 	client := proto.NewLogServiceClient(conn)
 	logMessage := []*proto.LogMessage{
-		{Source: "source1", LogLevel: "INFO", Message: "log message 1"},
+		{Source: "source1", LogLevel: "INFO", Message: "test log message 1"},
 		{Source: "source2", LogLevel: "INFO", Message: "log message 2"},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

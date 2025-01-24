@@ -2,42 +2,56 @@ package server
 
 import (
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
-type Metrics struct {
-	activeSources   map[string]bool
-	alertsTriggered int
-	mu              sync.Mutex
+type MetricsData struct {
+	activeSources   sync.Map
+	alertsTriggered atomic.Int32
 }
 
-func NewMetrics() *Metrics {
-	return &Metrics{activeSources: make(map[string]bool)}
+func NewMetrics() *MetricsData {
+	metrics := &MetricsData{activeSources: sync.Map{}}
+	metrics.MonitorSources()
+	return metrics
+
 }
 
-// IncrementSource marks a source as active
-func (m *Metrics) IncrementSource(source string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.activeSources[source] = true
+func (m *MetricsData) IncrementSource(source string) {
+	m.activeSources.Store(source, time.Now())
 }
 
-// GetActiveSources returns the number of active sources
-func (m *Metrics) GetActiveSources() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return len(m.activeSources)
+func (m *MetricsData) GetActiveSources() int {
+
+	count := 0
+	m.activeSources.Range(func(_, _ interface{}) bool {
+		count++
+		return true
+	})
+	return count
 }
 
-// IncrementAlerts increments the alerts triggered count
-func (m *Metrics) IncrementAlerts() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.alertsTriggered++
+func (m *MetricsData) IncrementAlerts() {
+	m.alertsTriggered.Add(1)
 }
 
-// GetAlertsTriggered returns the number of alerts triggered
-func (m *Metrics) GetAlertsTriggered() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.alertsTriggered
+func (m *MetricsData) GetAlertsTriggered() int {
+	return int(m.alertsTriggered.Load())
+}
+
+func (m *MetricsData) MonitorSources() {
+	go func() {
+		for {
+			//log.Printf("Active sources: %d", m.GetActiveSources())
+			m.activeSources.Range(func(key, value any) bool {
+				if time.Since(value.(time.Time)) > 10*time.Second {
+					m.activeSources.Delete(key)
+					time.Sleep(2 * time.Second)
+				}
+				return true
+			})
+			time.Sleep(2 * time.Second)
+		}
+	}()
 }
