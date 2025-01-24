@@ -65,6 +65,23 @@ func main() {
 
 	http.HandleFunc("/ws", handleWS)
 
+	http.HandleFunc("/alerts", func(w http.ResponseWriter, r *http.Request) {
+		ws, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("WebSocket upgrade error: %v", err)
+			return
+		}
+		defer ws.Close()
+
+		// For each alert, write it to this WS
+		for alert := range alerts.GetBroadcastChannel() {
+			if err := ws.WriteJSON(alert); err != nil {
+				log.Printf("WebSocket write error: %v", err)
+				break
+			}
+		}
+	})
+
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
